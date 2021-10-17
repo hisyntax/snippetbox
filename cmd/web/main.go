@@ -8,11 +8,16 @@ import (
 	"os"
 
 	_ "github.com/go-sql-driver/mysql"
+	"github.com/hisyntax/snippetbox/pkg/models/mysql"
 )
 
+// Add a snippets field to the application struct.
+// This will allow us to make the snippetModel object
+// available to our handlers
 type application struct {
 	errorLog *log.Logger
 	infoLog  *log.Logger
+	snippets *mysql.SnippetModel
 }
 
 func main() {
@@ -21,8 +26,6 @@ func main() {
 	// Define a new command-line flag for the MySQL DNS string.
 	dsn := flag.String("dns", "web:pass@/snippetbox?parseTime=true", "MYSQL database")
 	flag.Parse()
-
-	mux := http.NewServeMux()
 
 	infoLog := log.New(os.Stdout, "INFO\t", log.Ldate|log.Ltime)
 	errorLog := log.New(os.Stderr, "ERROR\t", log.Ldate|log.Ltime|log.Lshortfile)
@@ -33,17 +36,12 @@ func main() {
 	}
 	defer db.Close()
 
+	// Initialize a mysql.SnippetModel instance and add it to the application
 	app := &application{
 		errorLog: errorLog,
 		infoLog:  infoLog,
+		snippets: &mysql.SnippetModel{DB: db},
 	}
-
-	mux.HandleFunc("/", app.home)
-	mux.HandleFunc("/snippet", app.showSnippet)
-	mux.HandleFunc("/snippet/create", app.createSnippet)
-	//To serve all the static files our application depends on to run
-	fileServer := http.FileServer(http.Dir("./ui/static/"))
-	mux.Handle("/static/", http.StripPrefix("/static", fileServer))
 
 	srv := &http.Server{
 		Addr:     *addr,
