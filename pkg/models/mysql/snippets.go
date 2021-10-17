@@ -56,5 +56,43 @@ func (m *SnippetModel) Get(id int) (*models.Snippet, error) {
 
 // This will return !0 most recently created snippets
 func (m *SnippetModel) Latest() ([]*models.Snippet, error) {
-	return nil, nil
+	//write the SQL statement we want to execute
+	stmt := "SELECT id, title, content, created, expires FROM snippets WHERE expires > UTC_TIMESTAMP() ORDER BY created DESC LIMIT 10"
+
+	//use the QUERY() method on the connection pool to execute our SQL statement
+	rows, err := m.DB.Query(stmt)
+	if err != nil {
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	//initialize an empty slice to hold the models.Snipets objects
+	snippets := []*models.Snippet{}
+
+	//use rows.Next to iterate through the rows in the resultset
+	for rows.Next() {
+		//create a pointer to a new zeroed Snippet struct
+		s := &models.Snippet{}
+
+		//use rows.Scan() to copy the values from each field in the rows to the new snippet object that we created
+		err = rows.Scan(&s.ID, &s.Title, &s.Content, &s.Created, &s.Expires)
+		if err != nil {
+			return nil, err
+		}
+
+		//append it to the slice of snippets
+		snippets = append(snippets, s)
+
+	}
+
+	//when the rows.Nest() loop has finished, we call rows.Err() to retrieve an error that
+	//was ecountered during the iteration
+	if err = rows.Err(); err != nil {
+		return nil, err
+	}
+
+	//if everything went well, then return the snippets slice
+	return snippets, nil
+
 }

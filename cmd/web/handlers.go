@@ -14,22 +14,30 @@ func (app *application) home(w http.ResponseWriter, r *http.Request) {
 		app.notFound(w)
 		return
 	}
-
-	files := []string{
-		"./ui/html/home.page.html",
-		"./ui/html/base.layout.html",
-		"./ui/html/footer.partial.html",
-	}
-	ts, err := template.ParseFiles(files...)
-	if err != nil {
-		app.serverError(w, err)
-		return
-	}
-
-	err = ts.Execute(w, nil)
+	s, err := app.snippets.Latest()
 	if err != nil {
 		app.serverError(w, err)
 	}
+
+	for _, snippet := range s {
+		fmt.Fprintf(w, "%v\n", snippet)
+	}
+
+	// files := []string{
+	// 	"./ui/html/home.page.html",
+	// 	"./ui/html/base.layout.html",
+	// 	"./ui/html/footer.partial.html",
+	// }
+	// ts, err := template.ParseFiles(files...)
+	// if err != nil {
+	// 	app.serverError(w, err)
+	// 	return
+	// }
+
+	// err = ts.Execute(w, nil)
+	// if err != nil {
+	// 	app.serverError(w, err)
+	// }
 }
 
 func (app *application) showSnippet(w http.ResponseWriter, r *http.Request) {
@@ -51,8 +59,32 @@ func (app *application) showSnippet(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	//create an instance of a templateData struct holding the snippet data
+	data := &templateData{Snippet: s}
+
+	//initialize a slice containing the paths to the show.page.html
+	//plus the base layout and footer partial that we made earlier
+	files := []string{
+		"./ui/html/show.page.html",
+		"./ui/html/base.layout.html",
+		"./ui/html/footer.partial.html",
+	}
+
+	//parse the templates files...
+	ts, err := template.ParseFiles(files...)
+	if err != nil {
+		app.serverError(w, err)
+		return
+	}
+
+	//and the execute them
+	err = ts.Execute(w, data)
+	if err != nil {
+		app.serverError(w, err)
+	}
+
 	//write the snippet data as a plain text HTTP response body
-	fmt.Fprintf(w, "%v", s)
+	// fmt.Fprintf(w, "%v", s)
 }
 
 func (app *application) createSnippet(w http.ResponseWriter, r *http.Request) {
